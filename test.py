@@ -658,7 +658,7 @@ def solve_lvpp_membrane():
         lvpp_problem.solve()
         total_newton += lvpp_problem.solver.getIterationNumber()
 
-        w_new = sol_m.x.array[sub0_dofs][:n_local_m0]
+        w_new   = sol_m.x.array[sub0_dofs][:n_local_m0].copy()
         w_old = sol_m_k.x.array[sub0_dofs][:n_local_m0]
 
         inc = float(msh.comm.allreduce(
@@ -777,7 +777,7 @@ for step in range(N):
     
     # 기둥 폭(w_bar) 안에 들어오는 노드만 필터링 (십자 모양)
     on_bar_mask = (np.abs(y_m) < w_bar) | (np.abs(z_m) < w_bar)
-    w_on_bar = w_new[on_bar_mask]
+    w_on_bar = w_new[:n_local_m0][on_bar_mask]
 
     # 해당 영역 내의 로컬 최대 변위 구하기 (영역에 노드가 없으면 -1.0)
     local_max_w_bar = np.max(w_on_bar) if len(w_on_bar) > 0 else -1.0
@@ -809,7 +809,7 @@ for step in range(N):
         print(f"[{step:04d}] t={t:.3f}s | "
               f"최대 X좌표: {max_x_coord:.4f}m (변위: {global_max_w*1000:.2f}mm) | "
               f"장애물: {contact_str} | "
-              f"LVPP_Iter={total_n}")
+              f"LVPP_Iter={total_n}", flush=True)
 
 for v in [vtx_u, vtx_p, vtx_d, vtx_chi, vtx_w, vtx_phi]:
     v.close()
