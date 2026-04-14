@@ -107,29 +107,35 @@ if MPI.COMM_WORLD.rank == 0:
 
     # 격자 위치 근처 메시 세밀화 (막과 십자 기둥이 만나는 타깃 구역 촘촘하게!)
     # 격자 위치 근처 메시 세밀화 (막과 십자 기둥이 만나는 타깃 구역 유지!)
+    # Field 1: 막 평면만 얇게 (두께 0.01m, h=0.008 유지)
     gmsh.model.mesh.field.add("Box", 1)
-    
-    # 핵심 구역 범위는 기존과 동일하게 유지
-    gmsh.model.mesh.field.setNumber(1, "XMin", x_m - 0.05)
-    gmsh.model.mesh.field.setNumber(1, "XMax", x_grid + t_bar + 0.05)
+    gmsh.model.mesh.field.setNumber(1, "XMin", x_m - 0.005)
+    gmsh.model.mesh.field.setNumber(1, "XMax", x_m + 0.005)  # ← 두께 1cm만
     gmsh.model.mesh.field.setNumber(1, "YMin", -R)
     gmsh.model.mesh.field.setNumber(1, "YMax",  R)
     gmsh.model.mesh.field.setNumber(1, "ZMin", -R)
     gmsh.model.mesh.field.setNumber(1, "ZMax",  R)
-    
-    # 박스 안쪽과 바깥쪽의 메시 크기 극단화
-    gmsh.model.mesh.field.setNumber(1, "VIn",   0.008)  # 핵심 구역: 8mm 초정밀 (기존 유지)
-    gmsh.model.mesh.field.setNumber(1, "VOut",  0.4)    # 외부 원관: 400mm 큼직하게 (기존 0.10 -> 0.4 대폭 상향)
-    
-    # ★ 추가된 핵심 옵션: 내부(0.008)에서 외부(0.4)로 부드럽게 변하도록 완충 구역(0.3m) 설정
-    # 이 설정이 없으면 작은 메시와 큰 메시가 강제로 이어지면서 품질 에러가 날 수 있습니다.
-    gmsh.model.mesh.field.setNumber(1, "Thickness", 0.3) 
-    
-    gmsh.model.mesh.field.setAsBackgroundMesh(1)
+    gmsh.model.mesh.field.setNumber(1, "VIn",  0.008)
+    gmsh.model.mesh.field.setNumber(1, "VOut", 0.10)
 
-    # 전체 유체 도메인 메시 설정
-    gmsh.option.setNumber("Mesh.MeshSizeMax", 0.4)     # 최대 크기 상향 (기존 0.10 -> 0.4)
-    gmsh.option.setNumber("Mesh.MeshSizeMin", 0.005)   # 바닥값은 유지
+    # Field 2: 기둥 Brinkman 영역 (h=0.03)
+    gmsh.model.mesh.field.add("Box", 2)
+    gmsh.model.mesh.field.setNumber(2, "XMin", x_grid - t_bar - 0.01)
+    gmsh.model.mesh.field.setNumber(2, "XMax", x_grid + t_bar + 0.01)
+    gmsh.model.mesh.field.setNumber(2, "YMin", -R)
+    gmsh.model.mesh.field.setNumber(2, "YMax",  R)
+    gmsh.model.mesh.field.setNumber(2, "ZMin", -R)
+    gmsh.model.mesh.field.setNumber(2, "ZMax",  R)
+    gmsh.model.mesh.field.setNumber(2, "VIn",  0.03)
+    gmsh.model.mesh.field.setNumber(2, "VOut", 0.10)
+
+    # 두 필드 Min 합성
+    gmsh.model.mesh.field.add("Min", 3)
+    gmsh.model.mesh.field.setNumbers(3, "FieldsList", [1, 2])
+    gmsh.model.mesh.field.setAsBackgroundMesh(3)
+
+    gmsh.option.setNumber("Mesh.MeshSizeMax", 0.12)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", 0.005)
     gmsh.option.setNumber("Mesh.Algorithm3D", 4)
     
     print("메시 생성 시작...", flush=True)
